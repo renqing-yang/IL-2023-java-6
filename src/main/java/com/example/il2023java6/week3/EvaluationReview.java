@@ -1,6 +1,15 @@
 package com.example.il2023java6.week3;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Java basic
@@ -117,6 +126,9 @@ class HashMapExample {
 class Week3Student {
     private int id;
     private String name;
+
+    public Week3Student() {
+    }
 
     public Week3Student(int id, String name) {
         this.id = id;
@@ -334,7 +346,7 @@ class FailFastExample {
  */
 class StreamExample {
     public static void main(String[] args) {
-        new ArrayList<>().stream();
+        new ArrayList<>().stream().collect(Collectors.toList());
     }
 }
 
@@ -342,9 +354,15 @@ class StreamExample {
 //******************************************************************************************************
 
 /**
+ * stream api  vs forloop
+ *
  * Practice during class
  * Mention a little bit about parallel stream api
+ *
+ *  CPU task => core + 1
+ *  IO based => 1 / (1 - percentage of IO task)
  * Optional
+ *  Optional.ofNullable(xx).orElse();
  * Use cases
  * Make an example with optional
  * Completable future
@@ -358,16 +376,96 @@ class StreamExample {
  * Method reference
  * Where can we use it?
  *
+ */
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@interface MyAnnotation {
+    String value() default "abc";
+}
+
+@MyAnnotation(value = "daddddd")
+class ReflectionExample {
+    public static void main(String[] args) throws Exception {
+//        Class<?> clazz = Week3Student.class.getClass();
+        MyAnnotation annotation = (MyAnnotation) ReflectionExample.class.getDeclaredAnnotations()[0];
+        System.out.println(annotation.value());
+//        Week3Student s1 = (Week3Student) clazz.getDeclaredConstructors()[0].newInstance();
+//        System.out.println(s1);
+//        Field[] fields = clazz.getDeclaredFields();
+//        System.out.println(Arrays.toString(fields));
+//        Field f1 = fields[0];
+//        f1.setAccessible(true);
+//        f1.set(s1, 5);
+//        System.out.println(s1);
+    }
+}
+
+/**
+ * Spring : IOC , AOP
+ */
+class DynamicProxyExample {
+    public static void main(String[] args) {
+        Week3DPService service = (Week3DPService) Proxy.newProxyInstance(
+                DynamicProxyExample.class.getClassLoader(),
+                new Class[]{Week3DPService.class},
+                new Week3DPServiceInvocationHandler(new MyWeek3DPServiceImpl())
+        );
+        int res = service.getData();
+        System.out.println(res);
+    }
+}
+class Week3DPServiceInvocationHandler implements InvocationHandler {
+    private final Object obj;
+
+    public Week3DPServiceInvocationHandler(Object obj) {
+        this.obj = obj;
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        System.out.println("before logic");
+        Object res = method.invoke(obj, args);
+        return res;
+    }
+}
+
+interface Week3DPService {
+    int getData();
+    void print();
+}
+class MyWeek3DPServiceImpl implements Week3DPService {
+    @Override
+    public int getData() {
+        return 0;
+    }
+
+    @Override
+    public void print() {
+        System.out.println("aaa");
+    }
+}
+/**
  * Spring Boot+networking
- *
  * What is pom.xml
  * What is dependency
  * What is application.properties
  * What is spring bean
  * What is spring annotation
  * What is maven? What are popular commands?
+ *
  * OSI model in networking
- * Application layer, session layer, network layer, transport layer, data link layer, physical layer
+ * Application layer, Presentation Layer, session layer, transport layer,  network layer, data link layer, physical layer
+ * [ip header][tcp header][HTTP HEADER][data]  -> NAT(public ip pool) -> server / website -> socket
+ *                                                                                           -> create new Socket => T1
+ *                                                                                           -> create new Socket => T2
+ * connection[source ip, source port + dest ip , dest port]
+ *
+ * click url
+ *  1. browser will open a port
+ *  2. check computer local cache (TTL ip address)
+ *  3. DNS -> domain -> get ip locations
+ *  4. ...
+ * --------
  * TCP/IP model in networking
  * Application layer, transport layer, networking layer, network access layer
  * Three way handshake: TCP
@@ -396,6 +494,7 @@ class StreamExample {
  * Client key exchange
  * What is pre-master and session key
  * What is symmetric and asymmetric algorithm
+ *
  * What is spring MVC
  * Model vs view vs controller
  * The benefits of mvc
@@ -403,48 +502,28 @@ class StreamExample {
  * Demo how to build restController
  * Add function, sub function, multiply function, divide function: four restful apis
  * requestBody vs pathVariable vs requestParam
+ * /student/{id}/course?x=
+ * /student?id=xx
  * How to do test using postman
  * How to build exception handler
  * What is Json?
  * What are getmapping, PostMapping, PutMapping, DeleteMapping, PatchMapping
  * patchMapping vs putMapping
  * restController vs controller
- * Dispatcher servlet -> handler -> controller -> view resolver ->view
+ * Dispatcher servlet -> handler -> controller
+ *          1.-> view resolver ->view
+ *          2.-> http message converter -> jackson
  * What is dispatcher servlet
  * What are components in spring servlet
  * Service layer, repository layer, model, view, controller
- * What is IOC?
- * What is applicationContext?
- * What is beanFactory
- * What is dependency injection
- * Demo beans in applicationContext container
- * Autowired vs qualifier
  * Coding demo for this
  * What are beans life cycles?
- * Cookie vs session in http
- * Bean scope
- * Singleton
- * Prototype
- * Request
- * Session
- * Application
- * How to build a spring mvc project
- * Implement service layer, controller, repo layer
- * How to connect to database
- * What are annotations for Entity, Table, Data, Getter, Setter, Id
- * What are id generate strategy?
- * Auto, identity, sequence, table
- * Field inject vs construction inject vs setter injection
- * SpringAOP
- * Testing
- * TDD test and the steps
- * Unit test vs integration test
- * How to build a test function or class
- * How to test restful api
- * How to use mockMvc
- * How to implement TDD
- * What is spring validation
- * How to use spring validation
- * What are annotations: Valid, Min, Max, Size,email
- * A demo for spring validation
+ *
+ * Cookie vs session(stateful) in http
+ * api =>
+ * retrieve all students
+ * /students  get
+ * retrieve student by id
+ * /students/{id}  get
+ *
  */
